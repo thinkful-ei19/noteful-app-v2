@@ -39,7 +39,7 @@ router.get('/notes/:id', (req, res, next) => {
 
   // 3 variations:
   //   - Array Item `res.json(result[0]);`
-  //   - Array Destructuring `.then(([result]) => {`
+  //   - Array Destructuring `.then(([result]) => {...`
   //   - Use `.first()` instead of `.select()`
 
   knex.select('notes.id', 'title', 'content',
