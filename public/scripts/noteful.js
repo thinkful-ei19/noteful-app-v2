@@ -32,9 +32,7 @@ const noteful = (function () {
             <div class="date">${moment(item.created).calendar()}</div>
           </div>
       </li>`);
-    return listItems.join('');
-
-    
+    return listItems.join(''); 
   }
 
   function generateFolderList(list, currQuery) {
@@ -155,7 +153,9 @@ const noteful = (function () {
         store.currentNote = {};
       }
       api.remove(`/v2/notes/${noteId}`)
-        .then(() => api.search('/v2/notes', store.currentQuery))
+        .then(() => {
+          return api.search('/v2/notes', store.currentQuery);
+        })
         .then(response => {
           store.notes = response;
           render();
@@ -197,8 +197,6 @@ const noteful = (function () {
           store.folders = response;
           render();
         }).catch(err => {
-          console.log(err.responseJSON.message);
-          
           $('.js-error-message').text(err.responseJSON.message);
         });
     });
@@ -207,7 +205,6 @@ const noteful = (function () {
   function handleFolderDeleteClick() {
     $('.js-folders-list').on('click', '.js-folder-delete', event => {
       event.preventDefault();
-      console.log(6798);
 
       const folderId = getFolderIdFromElement(event.currentTarget);
 
@@ -224,6 +221,10 @@ const noteful = (function () {
         })
         .then(response => {
           store.folders = response;
+          return api.search('/v2/notes', store.currentQuery);
+        })
+        .then(response => {
+          store.notes = response;
           render();
         });
     });

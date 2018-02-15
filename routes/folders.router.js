@@ -21,7 +21,7 @@ router.get('/folders/:id', (req, res, next) => {
   knex.select('id', 'name')
     .where('id', req.params.id)
     .from('folders')
-    .then(result => {
+    .then(([result]) => {
       if (result) {
         res.json(result);
       } else {
@@ -80,7 +80,7 @@ router.put('/folders/:id', (req, res, next) => {
       if (result) {
         res.json(result);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(err => {
@@ -98,11 +98,7 @@ router.delete('/folders/:id', (req, res, next) => {
     .where('id', req.params.id)
     .from('folders')
     .then(count => {
-      if (count) {
-        res.status(204).end();
-      } else {
-        next(); // fall-through to 404 handler
-      }
+      res.status(204).end();
     })
     .catch(next);
 });

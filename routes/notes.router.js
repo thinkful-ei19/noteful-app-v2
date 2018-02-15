@@ -10,10 +10,10 @@ router.get('/notes', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
   const folderId = req.query.folderId;
 
-  knex.select('notes.id', 'title', 'content', 'folder_id',
-    'folders.name as folder_name')
-    .from('notes')
+  knex.select('notes.id', 'title', 'content',
+    'folders.id as folderId', 'folders.name as folderName')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
+    .from('notes')
     .where(function () {
       if (searchTerm) {
         this.where('title', 'like', `%${searchTerm}%`);
@@ -21,37 +21,30 @@ router.get('/notes', (req, res, next) => {
     })
     .where(function () {
       if (folderId) {
-        this.where('folder_id', folderId);
+        this.where('folderId', folderId);
       }
     })
     .orderBy('notes.id')
     .then(results => {
       res.json(results);
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
 router.get('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
 
-  // 3 variations:
-  //   - Array Item `res.json(result[0]);`
-  //   - Array Destructuring `.then(([result]) => {`
-  //   - Use `.first()` instead of `.select()`
-
   knex.select('notes.id', 'title', 'content',
-    'folder_id', 'folders.name as folder_name')
-    .from('notes')
+    'folders.id as folderId', 'folders.name as folderName')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
+    .from('notes')
     .where('notes.id', noteId)
-    .then(result => {
+    .then(([result]) => {
       if (result) {
-        res.json(result[0]);
+        res.json(result);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
@@ -59,7 +52,7 @@ router.get('/notes/:id', (req, res, next) => {
 
 /* ========== POST/CREATE ITEM ========== */
 router.post('/notes', (req, res, next) => {
-  const { title, content, folder_id } = req.body;
+  const { title, content, folderId } = req.body;
 
   /***** Never trust users. Validate input *****/
   if (!req.body.title) {
@@ -71,32 +64,22 @@ router.post('/notes', (req, res, next) => {
   const newItem = {
     title: title,
     content: content,
-    folder_id: folder_id
+    folderId: folderId
   };
-  let noteId;
+
   knex.insert(newItem)
     .into('notes')
-    .returning('id')
-    .then(([id]) => {
-      noteId = id;
-      return knex.select('notes.id', 'title', 'content', 'folder_id',
-        'folders.name as folder_name')
-        .from('notes')
-        .leftJoin('folders', 'notes.folder_id', 'folders.id')
-        .where('notes.id', noteId);
-    })
+    .returning(['id', 'title', 'content', 'folderId'])
     .then(([result]) => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
-  const { title, content, folder_id } = req.body;
+  const { title, content, folderId } = req.body;
 
   /***** Never trust users. Validate input *****/
   if (!req.body.title) {
@@ -108,25 +91,21 @@ router.put('/notes/:id', (req, res, next) => {
   const updateItem = {
     title: title,
     content: content,
-    folder_id: folder_id
+    folderId: folderId
   };
 
   knex('notes')
     .update(updateItem)
     .where('id', noteId)
-    .then(() => {
-      return knex.select('notes.id', 'title', 'content', 'folder_id',
-        'folders.name as folder_name')
-        .from('notes')
-        .leftJoin('folders', 'notes.folder_id', 'folders.id')
-        .where('notes.id', noteId);
-    })
+    .returning(['id', 'title', 'content', 'folderId'])
     .then(([result]) => {
-      res.json(result);
+      if (result) {
+        res.json(result);
+      } else {
+        next();
+      }
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
@@ -138,7 +117,7 @@ router.delete('/notes/:id', (req, res, next) => {
       if (count) {
         res.status(204).end();
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
