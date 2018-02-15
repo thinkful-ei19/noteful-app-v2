@@ -20,28 +20,21 @@ router.get('/notes', (req, res, next) => {
     .then(results => {
       res.json(results);
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
 router.get('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
 
-  // 3 variations:
-  //   - Array Item `res.json(result[0]);`
-  //   - Array Destructuring `.then(([result]) => {...`
-  //   - Use `.first()` instead of `.select()`
-
   knex.select('notes.id', 'title', 'content')
     .from('notes')
     .where('notes.id', noteId)
-    .then(result => {
+    .then(([result]) => {
       if (result) {
-        res.json(result[0]);
+        res.json(result);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
@@ -69,9 +62,7 @@ router.post('/notes', (req, res, next) => {
     .then(([result]) => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
@@ -96,11 +87,13 @@ router.put('/notes/:id', (req, res, next) => {
     .where('id', noteId)
     .returning(['id', 'title', 'content'])
     .then(([result]) => {
-      res.json(result);
+      if (result) {
+        res.json(result);
+      } else {
+        next();
+      }
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
@@ -112,7 +105,7 @@ router.delete('/notes/:id', (req, res, next) => {
       if (count) {
         res.status(204).end();
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
