@@ -22,8 +22,7 @@ const noteful = (function () {
     const editForm = $('.js-note-edit-form');
     editForm.find('.js-note-title-entry').val(store.currentNote.title);
     editForm.find('.js-note-content-entry').val(store.currentNote.content);
-    //NOTE: Incoming folder id for API is `folder_id`, locally it is folderId
-    editForm.find('.js-note-folder-entry').val(store.currentNote.folder_id);
+    editForm.find('.js-note-folder-entry').val(store.currentNote.folderId);
 
     editForm.find('.js-note-tags-entry').val(() => {
       if (store.currentNote.tags) {
@@ -46,8 +45,6 @@ const noteful = (function () {
           </div>
       </li>`);
     return listItems.join('');
-
-    
   }
 
   function generateFolderList(list, currQuery) {
@@ -152,7 +149,7 @@ const noteful = (function () {
         id: store.currentNote.id,
         title: editForm.find('.js-note-title-entry').val(),
         content: editForm.find('.js-note-content-entry').val(),
-        folder_id: editForm.find('.js-note-folder-entry').val(),
+        folderId: editForm.find('.js-note-folder-entry').val(),
         tags: editForm.find('.js-note-tags-entry').val()
       };
 
@@ -216,7 +213,7 @@ const noteful = (function () {
 
       const folderId = getFolderIdFromElement(event.currentTarget);
       store.currentQuery.folderId = folderId;
-      if (folderId !== store.currentNote.folder_id) {
+      if (folderId !== store.currentNote.folderId) {
         store.currentNote = {};
       }
 
@@ -258,7 +255,7 @@ const noteful = (function () {
       if (folderId === store.currentQuery.folderId) {
         store.currentQuery.folderId = null;
       }
-      if (folderId === store.currentNote.folder_id) {
+      if (folderId === store.currentNote.folderId) {
         store.currentNote = {};
       }
 

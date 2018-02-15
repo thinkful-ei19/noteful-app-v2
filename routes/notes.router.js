@@ -1,8 +1,8 @@
 'use strict';
 
 const express = require('express');
-const Treeize = require('treeize');
 const knex = require('../knex');
+const hydrateNotes = require('../utils/hydrateNotes');
 
 const router = express.Router();
 
@@ -12,9 +12,9 @@ router.get('/notes', (req, res, next) => {
   const folderId = req.query.folderId;
   const tagId = req.query.tagId;
 
-  knex.select('notes.id', 'title', 'content', 'folder_id',
-    'folders.name as folder_name',
-    'tags.id as tags:id', 'tags.name as tags:name')
+  knex.select('notes.id', 'title', 'content',
+    'folders.id as folderId', 'folders.name as folderName',
+    'tags.id as tagId', 'tags.name as tagName')
     .from('notes')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .leftJoin('notes_tags', 'notes.id', 'notes_tags.note_id')
@@ -31,37 +31,24 @@ router.get('/notes', (req, res, next) => {
     })
     .where(function () {
       if (tagId) {
-        const subQuery = knex.select('notes.id')
-          .from('notes')
-          .innerJoin('notes_tags', 'notes.id', 'notes_tags.note_id')
-          .where('notes_tags.tag_id', tagId);
-        this.whereIn('notes.id', subQuery);
+        this.where('tag_id', tagId);
       }
     })
     .orderBy('notes.id')
     .then(results => {
-      const treeize = new Treeize();
-      treeize.grow(results);
-      const hydrated = treeize.getData();
+      const hydrated = hydrateNotes(results);
       res.json(hydrated);
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
 router.get('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
 
-  // 3 variations:
-  //   - Array Item `res.json(result[0]);`
-  //   - Array Destructuring `.then(([result]) => {`
-  //   - Use `.first()` instead of `.select()`
-
-  knex.select('notes.id', 'title', 'content', 'folder_id',
-    'folders.name as folder_name',
-    'tags.id as tags:id', 'tags.name as tags:name')
+  knex.select('notes.id', 'title', 'content',
+    'folders.id as folderId', 'folders.name as folderName',
+    'tags.id as tagId', 'tags.name as tagName')
     .from('notes')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .leftJoin('notes_tags', 'notes.id', 'notes_tags.note_id')
@@ -69,22 +56,20 @@ router.get('/notes/:id', (req, res, next) => {
     .where('notes.id', noteId)
     .then(result => {
       if (result) {
-        const treeize = new Treeize();
-        treeize.grow(result);
-        const hydrated = treeize.getData();
+        const hydrated = hydrateNotes(result);
         res.json(hydrated[0]);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
-
 });
 
 /* ========== POST/CREATE ITEM ========== */
 router.post('/notes', (req, res, next) => {
-  const { title, content, folder_id, tags } = req.body;
-
+  const { title, content, folderId, tagIds = [] } = req.body;
+  console.log('tagIds', tagIds);
+  
   /***** Never trust users. Validate input *****/
   if (!req.body.title) {
     const err = new Error('Missing `title` in request body');
@@ -95,22 +80,26 @@ router.post('/notes', (req, res, next) => {
   const newItem = {
     title: title,
     content: content,
-    folder_id: folder_id
+    folder_id: folderId
   };
+
   let noteId;
   knex.insert(newItem)
     .into('notes')
     .returning('id')
     .then(([id]) => {
       noteId = id;
-      const tagsInsert = tags.map(tagId => ({ note_id: noteId, tag_id: tagId }));
+      console.log('tagIds', tagIds);
+      
+      const tagsInsert = tagIds.map(tagId => ({ note_id: noteId, tag_id: tagId }));
       return knex.insert(tagsInsert)
         .into('notes_tags');
+
     })
     .then(() => {
-      return knex.select('notes.id', 'title', 'content', 'folder_id',
-        'folders.name as folder_name',
-        'tags.id as tags:id', 'tags.name as tags:name')
+      return knex.select('notes.id', 'title', 'content',
+        'folders.id as folderId', 'folders.name as folderName',
+        'tags.id as tagId', 'tags.name as tagName')
         .from('notes')
         .leftJoin('folders', 'notes.folder_id', 'folders.id')
         .leftJoin('notes_tags', 'notes.id', 'notes_tags.note_id')
@@ -118,24 +107,22 @@ router.post('/notes', (req, res, next) => {
         .where('notes.id', noteId);
     })
     .then(result => {
+
       if (result) {
-        const treeize = new Treeize();
-        treeize.grow(result);
-        const hydrated = treeize.getData();
-        res.location(`${req.originalUrl}/${result.id}`).status(201).json(hydrated[0]);
+        const hydrated = hydrateNotes(result);
+        res.json(hydrated[0]);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
+      
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
-  const { title, content, folder_id, tags } = req.body;
+  const { title, content, folderId, tags } = req.body;
 
   /***** Never trust users. Validate input *****/
   if (!req.body.title) {
@@ -147,7 +134,7 @@ router.put('/notes/:id', (req, res, next) => {
   const updateItem = {
     title: title,
     content: content,
-    folder_id: folder_id
+    folder_id: folderId
   };
 
   knex('notes')
@@ -164,9 +151,9 @@ router.put('/notes/:id', (req, res, next) => {
         .into('notes_tags');
     })
     .then(() => {
-      return knex.select('notes.id', 'title', 'content', 'folder_id',
-        'folders.name as folder_name',
-        'tags.id as tags:id', 'tags.name as tags:name')
+      return knex.select('notes.id', 'title', 'content',
+        'folders.id as folderId', 'folders.name as folderName',
+        'tags.id as tagId', 'tags.name as tagName')
         .from('notes')
         .leftJoin('folders', 'notes.folder_id', 'folders.id')
         .leftJoin('notes_tags', 'notes.id', 'notes_tags.note_id')
@@ -175,17 +162,13 @@ router.put('/notes/:id', (req, res, next) => {
     })
     .then(result => {
       if (result) {
-        const treeize = new Treeize();
-        treeize.grow(result);
-        const hydrated = treeize.getData();
+        const hydrated = hydrateNotes(result);
         res.json(hydrated[0]);
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
-    .catch(err => {
-      console.error(err);
-    });
+    .catch(next);
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
@@ -197,7 +180,7 @@ router.delete('/notes/:id', (req, res, next) => {
       if (count) {
         res.status(204).end();
       } else {
-        next(); // fall-through to 404 handler
+        next();
       }
     })
     .catch(next);
