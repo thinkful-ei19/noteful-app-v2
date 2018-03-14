@@ -22,7 +22,6 @@ const noteful = (function () {
     const editForm = $('.js-note-edit-form');
     editForm.find('.js-note-title-entry').val(store.currentNote.title);
     editForm.find('.js-note-content-entry').val(store.currentNote.content);
-    //NOTE: Incoming folder id for API is `folder_id`, locally it is folderId
     editForm.find('.js-note-folder-entry').val(store.currentNote.folder_id);
 
     editForm.find('.js-note-tags-entry').val(() => {
@@ -278,7 +277,6 @@ const noteful = (function () {
       const tagId = getTagIdFromElement(event.currentTarget);
       store.currentQuery.tagId = tagId;
 
-      //TODO; loop over tags, if not a match, then clear
       store.currentNote = {};
 
       console.log('Get notes by tagId, coming soon...');
@@ -336,10 +334,6 @@ const noteful = (function () {
       //   });
     });
   }
-
-
-
-
 
   function bindEventListeners() {
     handleNoteItemClick();

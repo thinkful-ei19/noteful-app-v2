@@ -17,10 +17,10 @@ router.get('/folders', (req, res, next) => {
 
 /* ========== GET/READ SINGLE TAGS ========== */
 router.get('/folders/:id', (req, res, next) => {
-  knex.select('id', 'name')
+  knex.first('id', 'name')
     .where('id', req.params.id)
     .from('folders')
-    .then(([result]) => {
+    .then(result => {
       if (result) {
         res.json(result);
       } else {
@@ -46,7 +46,8 @@ router.post('/folders', (req, res, next) => {
   knex.insert(newItem)
     .into('folders')
     .returning(['id', 'name'])
-    .then(([result]) => {
+    .then((results) => {
+      const result = results[0];
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => next(err));
@@ -84,7 +85,7 @@ router.delete('/folders/:id', (req, res, next) => {
   knex.del()
     .where('id', req.params.id)
     .from('folders')
-    .then(count => {
+    .then(() => {
       res.status(204).end();
     })
     .catch(next);

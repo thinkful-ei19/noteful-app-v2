@@ -34,12 +34,12 @@ router.get('/notes', (req, res, next) => {
 router.get('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
 
-  knex.select('notes.id', 'title', 'content',
+  knex.first('notes.id', 'title', 'content',
     'folders.id as folder_id', 'folders.name as folderName')
     .from('notes')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .where('notes.id', noteId)
-    .then(([result]) => {
+    .then(result => {
       if (result) {
         res.json(result);
       } else {
@@ -79,7 +79,8 @@ router.post('/notes', (req, res, next) => {
         .leftJoin('folders', 'notes.folder_id', 'folders.id')
         .where('notes.id', noteId);
     })
-    .then(([result]) => {
+    .then((results) => {
+      const result = results[0];
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => next(err));
@@ -131,12 +132,8 @@ router.delete('/notes/:id', (req, res, next) => {
   knex.del()
     .where('id', req.params.id)
     .from('notes')
-    .then(count => {
-      if (count) {
-        res.status(204).end();
-      } else {
-        next();
-      }
+    .then(() => {
+      res.status(204).end();
     })
     .catch(err => next(err));
 });
