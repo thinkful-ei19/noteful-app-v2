@@ -91,7 +91,6 @@ router.post('/notes', (req, res, next) => {
 router.put('/notes/:id', (req, res, next) => {
   const noteId = req.params.id;
   const { title, content, folder_id } = req.body;
-  console.log(folder_id);
 
   /***** Never trust users. Validate input *****/
   if (!req.body.title) {
