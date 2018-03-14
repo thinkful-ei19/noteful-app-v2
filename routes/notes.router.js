@@ -9,7 +9,8 @@ const router = express.Router();
 router.get('/notes', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
 
-  knex.select('notes.id', 'title', 'content').from('notes')
+  knex.select('notes.id', 'title', 'content')
+    .from('notes')
     .modify(function (queryBuilder) {
       if (searchTerm) {
         queryBuilder.where('title', 'like', `%${searchTerm}%`);
@@ -17,9 +18,13 @@ router.get('/notes', (req, res, next) => {
     })
     .orderBy('notes.id')
     .then(results => {
+      // console.log(JSON.stringify(results, null, 2));
       res.json(results);
     })
-    .catch(err => next(err));
+    .catch(err => {
+      // console.error(err);
+      next(err);
+    });
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
@@ -36,7 +41,7 @@ router.get('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== POST/CREATE ITEM ========== */
@@ -58,10 +63,11 @@ router.post('/notes', (req, res, next) => {
   knex.insert(newItem)
     .into('notes')
     .returning(['id', 'title', 'content'])
-    .then(([result]) => {
+    .then( ( [result]  ) => {
+      
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
@@ -92,7 +98,7 @@ router.put('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
@@ -107,7 +113,7 @@ router.delete('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 module.exports = router;
