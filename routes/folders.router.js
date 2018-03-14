@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 
 const knex = require('../knex');
-const { UNIQUE_VIOLATION } = require('pg-error-constants');
 
 /* ========== GET/READ ALL TAGS ========== */
 router.get('/folders', (req, res, next) => {
@@ -50,13 +49,7 @@ router.post('/folders', (req, res, next) => {
     .then(([result]) => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
-    .catch(err => {
-      if (err.code === UNIQUE_VIOLATION && err.constraint === 'folders_name_key') {
-        err = new Error('Folder name is already taken');
-        err.status = 409;
-      } 
-      next(err);
-    });
+    .catch(err => next(err));
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
@@ -83,13 +76,7 @@ router.put('/folders/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(err => {
-      if (err.code === UNIQUE_VIOLATION && err.constraint === 'folders_name_key') {
-        err = new Error('Folder name is already taken');
-        err.status = 409;
-      } 
-      next(err);
-    });
+    .catch(err => next(err));
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */

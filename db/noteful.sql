@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS folders;
 
 CREATE TABLE folders (
     id serial PRIMARY KEY,
-    name text NOT NULL UNIQUE
+    name text NOT NULL
 );
 ALTER SEQUENCE folders_id_seq RESTART WITH 100;
 
