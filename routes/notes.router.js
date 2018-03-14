@@ -12,8 +12,8 @@ router.get('/notes', (req, res, next) => {
 
   knex.select('notes.id', 'title', 'content',
     'folders.id as folderId', 'folders.name as folderName')
-    .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .from('notes')
+    .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .modify(function (queryBuilder) {
       if (searchTerm) {
         queryBuilder.where('title', 'like', `%${searchTerm}%`);
@@ -28,7 +28,7 @@ router.get('/notes', (req, res, next) => {
     .then(results => {
       res.json(results);
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
@@ -37,8 +37,8 @@ router.get('/notes/:id', (req, res, next) => {
 
   knex.select('notes.id', 'title', 'content',
     'folders.id as folderId', 'folders.name as folderName')
-    .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .from('notes')
+    .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .where('notes.id', noteId)
     .then(([result]) => {
       if (result) {
@@ -47,7 +47,7 @@ router.get('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== POST/CREATE ITEM ========== */
@@ -73,7 +73,7 @@ router.post('/notes', (req, res, next) => {
     .then(([result]) => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
@@ -105,7 +105,7 @@ router.put('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
@@ -120,7 +120,7 @@ router.delete('/notes/:id', (req, res, next) => {
         next();
       }
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 module.exports = router;
