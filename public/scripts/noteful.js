@@ -46,8 +46,6 @@ const noteful = (function () {
           </div>
       </li>`);
     return listItems.join('');
-
-    
   }
 
   function generateFolderList(list, currQuery) {
