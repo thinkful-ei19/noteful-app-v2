@@ -9,18 +9,17 @@ const router = express.Router();
 router.get('/notes', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
 
-  knex.select('notes.id', 'title', 'content'
-  ).from('notes')
-    .where(function () {
+  knex.select('notes.id', 'title', 'content').from('notes')
+    .modify(function (queryBuilder) {
       if (searchTerm) {
-        this.where('title', 'like', `%${searchTerm}%`);
+        queryBuilder.where('title', 'like', `%${searchTerm}%`);
       }
     })
     .orderBy('notes.id')
     .then(results => {
       res.json(results);
     })
-    .catch(next);
+    .catch(err => next(err));
 });
 
 /* ========== GET/READ SINGLE NOTES ========== */
