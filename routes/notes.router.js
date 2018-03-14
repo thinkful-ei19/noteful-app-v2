@@ -14,14 +14,14 @@ router.get('/notes', (req, res, next) => {
     'folders.id as folderId', 'folders.name as folderName')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
     .from('notes')
-    .where(function () {
+    .modify(function (queryBuilder) {
       if (searchTerm) {
-        this.where('title', 'like', `%${searchTerm}%`);
+        queryBuilder.where('title', 'like', `%${searchTerm}%`);
       }
     })
-    .where(function () {
+    .modify(function (queryBuilder) {
       if (folderId) {
-        this.where('folderId', folderId);
+        queryBuilder.where('folderId', folderId);
       }
     })
     .orderBy('notes.id')
